@@ -1,50 +1,29 @@
 #!/usr/bin/python3
-""""Module"""
+"""Module"""
 
-import csv
-import json
 import requests
-from sys import argv
+import sys
 
+if __name__ == '__main__':
+    employee_id = sys.argv[1]
+    user_url = "https://jsonplaceholder.typicode.com/users/{}" \
+        .format(employee_id)
+    todos_url = "https://jsonplaceholder.typicode.com/users/{}/todos/" \
+        .format(employee_id)
 
-if __name__ == "__main__":
-    """
-        request user info by employee ID
-    """
-    request_employee = requests.get(
-        'https://jsonplaceholder.typicode.com/users/{}/'.format(argv[1]))
-    """
-        convert json to dictionary
-    """
-    user = json.loads(request_employee.text)
-    """
-        extract username
-    """
-    username = user.get("username")
+    user_info = requests.request('GET', user_url).json()
+    todos_info = requests.request('GET', todos_url).json()
 
-    """
-        request user's TODO list
-    """
-    request_todos = requests.get(
-        'https://jsonplaceholder.typicode.com/users/{}/todos'.format(argv[1]))
-    """
-        dictionary to store task status(completed) in boolean format
-    """
-    tasks = {}
-    """
-        convert json to list of dictionaries
-    """
-    user_todos = json.loads(request_todos.text)
-    """
-        loop through dictionary & get completed tasks
-    """
-    for dictionary in user_todos:
-        tasks.update({dictionary.get("title"): dictionary.get("completed")})
+    employee_name = user_info["name"]
+    employee_username = user_info["username"]
+    task_completed = list(filter(lambda obj:
+                                 (obj["completed"] is True), todos_info))
+    number_of_done_tasks = len(task_completed)
+    total_number_of_tasks = len(todos_info)
 
-    """
-        export to CSV
-    """
-    with open('{}.csv'.format(argv[1]), mode='w') as file:
-        file_editor = csv.writer(file, delimiter=',', quoting=csv.QUOTE_ALL)
-        for k, v in tasks.items():
-            file_editor.writerow([argv[1], username, v, k])
+    with open(str(employee_id) + '.csv', "w") as file:
+        [file.write('"' + str(employee_id) + '",' +
+                    '"' + employee_username + '",' +
+                    '"' + str(task["completed"]) + '",' +
+                    '"' + task["title"] + '",' + "\n")
+         for task in todos_info]
